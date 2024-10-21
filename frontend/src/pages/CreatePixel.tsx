@@ -10,22 +10,27 @@ import { Dialog, Transition } from "@headlessui/react";
 const API_BASE_URL = "https://email-logger.onrender.com";
 
 const CreatePixel: React.FC = () => {
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
   const [pixelToken, setPixelToken] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleCreatePixel = async () => {
     try {
       const response = await axios.post(
         `${API_BASE_URL}/pixel/create`,
-        {},
+        { recipientEmail, emailSubject },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
       );
       setPixelToken(response.data.pixelToken);
+      setError("");
     } catch (error) {
       console.error("Error creating pixel:", error);
+      setError("Failed to create pixel. Please try again.");
     }
   };
 
@@ -47,12 +52,47 @@ const CreatePixel: React.FC = () => {
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             {!pixelToken ? (
-              <button
-                onClick={handleCreatePixel}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Generate Pixel
-              </button>
+              <div className="space-y-6">
+                <div>
+                  <label
+                    htmlFor="recipient-email"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Recipient Email
+                  </label>
+                  <input
+                    type="email"
+                    id="recipient-email"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="email-subject"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Email Subject
+                  </label>
+                  <input
+                    type="text"
+                    id="email-subject"
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                {error && <div className="text-red-600 text-sm">{error}</div>}
+                <button
+                  onClick={handleCreatePixel}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Generate Pixel
+                </button>
+              </div>
             ) : (
               <div className="space-y-6">
                 <div>

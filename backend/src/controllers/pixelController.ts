@@ -12,6 +12,7 @@ export const createPixel = async (req: Request, res: Response): Promise<void> =>
     return;
   }
 
+  const { recipientEmail, emailSubject } = req.body;
   const userId = req.user.userId;
   const token = crypto.randomBytes(16).toString('hex');
   
@@ -19,6 +20,8 @@ export const createPixel = async (req: Request, res: Response): Promise<void> =>
     const pixel = await prisma.pixel.create({
       data: {
         token,
+        recipientEmail,
+        emailSubject,
         userId,
       },
     });
@@ -85,17 +88,18 @@ export const getPixelStats = async (req: Request, res: Response): Promise<void> 
       select: {
         id: true,
         token: true,
+        recipientEmail: true,
+        emailSubject: true,
         viewCount: true,
         createdAt: true,
         views: {
           select: {
             viewedAt: true,
-            userAgent: true,
-            ipAddress: true,
           },
           orderBy: {
             viewedAt: 'desc',
           },
+          take: 5,
         },
       },
     });
@@ -106,6 +110,7 @@ export const getPixelStats = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ error: 'Error fetching pixel stats' });
   }
 };
+
 
 export const serveInvisiblePixel = async (req: Request, res: Response): Promise<void> => {
   const { token } = req.params;

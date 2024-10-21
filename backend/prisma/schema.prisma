@@ -18,13 +18,15 @@ model User {
 }
 
 model Pixel {
-  id        Int      @id @default(autoincrement())
-  token     String   @unique
-  viewCount Int      @default(0)
-  createdAt DateTime @default(now())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  views     View[]
+  id             Int      @id @default(autoincrement())
+  token          String   @unique
+  recipientEmail String
+  emailSubject   String
+  viewCount      Int      @default(0)
+  createdAt      DateTime @default(now())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
+  views          View[]
 }
 
 model View {
