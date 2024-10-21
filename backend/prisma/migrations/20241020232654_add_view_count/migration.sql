@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Pixel" ADD COLUMN     "viewCount" INTEGER NOT NULL DEFAULT 0;

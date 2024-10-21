@@ -1,0 +1,37 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  pixels    Pixel[]
+}
+
+model Pixel {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  viewCount Int      @default(0)
+  createdAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  views     View[]
+}
+
+model View {
+  id        Int      @id @default(autoincrement())
+  pixelId   Int
+  pixel     Pixel    @relation(fields: [pixelId], references: [id])
+  viewedAt  DateTime @default(now())
+  userAgent String?
+  ipAddress String?
+}
