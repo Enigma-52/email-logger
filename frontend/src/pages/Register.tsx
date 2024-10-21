@@ -10,7 +10,7 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:3000/auth/register", {
+      await axios.post("https://email-logger.onrender.com/auth/register", {
         email,
         password,
       });

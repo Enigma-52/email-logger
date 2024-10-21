@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 // Replace this with your ngrok URL when testing, and with your actual server URL in production
-const API_BASE_URL = "https://9547-103-51-148-131.ngrok-free.app"; // Replace with your ngrok URL
+const API_BASE_URL = "https://email-logger.onrender.com"; // Replace with your ngrok URL
 
 const CreatePixel: React.FC = () => {
   const [pixelToken, setPixelToken] = useState("");

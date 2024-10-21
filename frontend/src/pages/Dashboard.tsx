@@ -22,9 +22,14 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchPixels = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/pixel/stats", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
+        const response = await axios.get(
+          "https://email-logger.onrender.com/pixel/stats",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
         setPixels(response.data.pixels);
       } catch (error) {
         console.error("Error fetching pixels:", error);
