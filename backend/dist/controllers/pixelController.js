@@ -23,12 +23,15 @@ const createPixel = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.status(401).json({ error: 'User not authenticated' });
         return;
     }
+    const { recipientEmail, emailSubject } = req.body;
     const userId = req.user.userId;
     const token = crypto_1.default.randomBytes(16).toString('hex');
     try {
         const pixel = yield prisma.pixel.create({
             data: {
                 token,
+                recipientEmail,
+                emailSubject,
                 userId,
             },
         });
@@ -92,17 +95,18 @@ const getPixelStats = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             select: {
                 id: true,
                 token: true,
+                recipientEmail: true,
+                emailSubject: true,
                 viewCount: true,
                 createdAt: true,
                 views: {
                     select: {
                         viewedAt: true,
-                        userAgent: true,
-                        ipAddress: true,
                     },
                     orderBy: {
                         viewedAt: 'desc',
                     },
+                    take: 5,
                 },
             },
         });

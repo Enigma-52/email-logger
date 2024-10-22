@@ -12,6 +12,9 @@ app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use('/auth', authRoutes_1.default);
 app.use('/pixel', pixelRoutes_1.default);
+app.get('/health', (req, res) => {
+    res.sendStatus(200).send('OK');
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
