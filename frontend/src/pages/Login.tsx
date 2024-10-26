@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { LockClosedIcon } from "@heroicons/react/20/solid";
 
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
+
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,13 +18,10 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(
-        "https://email-logger.onrender.com/auth/login",
-        {
-          email,
-          password,
-        }
-      );
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+        email,
+        password,
+      });
       localStorage.setItem("token", response.data.token);
       navigate("/dashboard");
     } catch (error) {

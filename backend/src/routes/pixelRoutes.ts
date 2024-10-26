@@ -16,4 +16,7 @@ router.get('/invisible/:token.jpg', (req, res) => pixelController.serveInvisible
 // Get pixel stats (protected route)
 router.get('/stats', authenticateToken, (req, res) => pixelController.getPixelStats(req, res));
 
+//Delete
+router.delete('/:id', authenticateToken, (req, res) => pixelController.deletePixel(req, res));
+
 export default router;

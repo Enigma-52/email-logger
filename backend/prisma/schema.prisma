@@ -24,6 +24,7 @@ model Pixel {
   emailSubject   String
   viewCount      Int      @default(0)
   createdAt      DateTime @default(now())
+  creatorIp      String?
   userId         Int
   user           User     @relation(fields: [userId], references: [id])
   views          View[]
@@ -34,6 +35,7 @@ model View {
   pixelId   Int
   pixel     Pixel    @relation(fields: [pixelId], references: [id])
   viewedAt  DateTime @default(now())
+  viewerIp  String?
   userAgent String?
   ipAddress String?
 }

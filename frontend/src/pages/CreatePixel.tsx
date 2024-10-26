@@ -7,7 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Dialog, Transition } from "@headlessui/react";
 
-const API_BASE_URL = "https://email-logger.onrender.com";
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
 const CreatePixel: React.FC = () => {
   const [recipientEmail, setRecipientEmail] = useState("");

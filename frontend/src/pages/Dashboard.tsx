@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { PlusIcon, EyeIcon, MapIcon } from "@heroicons/react/24/outline";
+import {
+  PlusIcon,
+  EyeIcon,
+  TrashIcon,
+  LinkIcon,
+  ClipboardDocumentIcon,
+  XMarkIcon,
+  MapIcon,
+  ChartBarIcon,
+} from "@heroicons/react/24/outline";
+import { CheckIcon } from "@heroicons/react/24/solid";
 
 interface View {
   viewedAt: string;
@@ -17,21 +27,25 @@ interface Pixel {
   views: View[];
 }
 
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
+
 const Dashboard: React.FC = () => {
   const [pixels, setPixels] = useState<Pixel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [pixelToDelete, setPixelToDelete] = useState<Pixel | null>(null);
+  const [urlModalOpen, setUrlModalOpen] = useState(false);
+  const [currentPixel, setCurrentPixel] = useState<Pixel | null>(null);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     const fetchPixels = async () => {
       try {
-        const response = await axios.get(
-          "https://email-logger.onrender.com/pixel/stats",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
+        const response = await axios.get(`${API_BASE_URL}/pixel/stats`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
         setPixels(response.data.pixels);
         setIsLoading(false);
       } catch (error) {
@@ -43,6 +57,41 @@ const Dashboard: React.FC = () => {
     fetchPixels();
   }, []);
 
+  const handleDelete = (pixel: Pixel) => {
+    setPixelToDelete(pixel);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (pixelToDelete) {
+      try {
+        await axios.delete(`${API_BASE_URL}/pixel/${pixelToDelete.id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setPixels(pixels.filter((p) => p.id !== pixelToDelete.id));
+        setDeleteModalOpen(false);
+        setPixelToDelete(null);
+      } catch (error) {
+        console.error("Error deleting pixel:", error);
+        // Add error handling UI feedback
+      }
+    }
+  };
+
+  const handleShowUrl = (pixel: Pixel) => {
+    setCurrentPixel(pixel);
+    setUrlModalOpen(true);
+  };
+
+  const handleCopyUrl = (token: string) => {
+    const url = `${API_BASE_URL}/pixel/invisible/${token}.jpg`;
+    navigator.clipboard.writeText(url);
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -51,6 +100,13 @@ const Dashboard: React.FC = () => {
             <h2 className="text-3xl font-bold text-gray-900">
               Email Tracking Dashboard
             </h2>
+            <Link
+              to="/analytics"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <ChartBarIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+              Analytics
+            </Link>
             <Link
               to="/create-pixel"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -88,43 +144,181 @@ const Dashboard: React.FC = () => {
               {pixels.map((pixel) => (
                 <div
                   key={pixel.id}
-                  className="bg-white overflow-hidden shadow rounded-lg"
+                  className="bg-white overflow-hidden shadow rounded-lg relative group"
                 >
+                  {/* Action Buttons */}
+                  <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleShowUrl(pixel)}
+                      className="p-1.5 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-gray-100"
+                      title="View Tracking URL"
+                    >
+                      <LinkIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(pixel)}
+                      className="p-1.5 rounded-full text-gray-400 hover:text-red-600 hover:bg-gray-100"
+                      title="Delete Pixel"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </div>
+
                   <div className="px-4 py-5 sm:p-6">
                     <h3 className="text-lg leading-6 font-medium text-gray-900 truncate">
                       {pixel.emailSubject}
                     </h3>
                     <div className="mt-2 max-w-xl text-sm text-gray-500">
                       <p className="truncate">To: {pixel.recipientEmail}</p>
-                      <p>View Count: {pixel.viewCount}</p>
-                      <p>
-                        Created:{" "}
-                        {new Date(pixel.createdAt).toLocaleDateString()}
-                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="flex items-center">
+                          <EyeIcon className="h-4 w-4 mr-1" />
+                          {pixel.viewCount}{" "}
+                          {pixel.viewCount === 1 ? "view" : "views"}
+                        </p>
+                        <p className="text-xs">
+                          Created:{" "}
+                          {new Date(pixel.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="mt-3">
-                      <h4 className="text-sm font-medium text-gray-900">
-                        Recent Views:
+
+                    <div className="mt-4">
+                      <h4 className="text-sm font-medium text-gray-900 flex items-center justify-between">
+                        Recent Views
+                        {pixel.views.length > 0 && (
+                          <span className="text-xs text-gray-500">
+                            Last viewed:{" "}
+                            {new Date(pixel.views[0].viewedAt).toLocaleString()}
+                          </span>
+                        )}
                       </h4>
-                      <ul className="mt-2 divide-y divide-gray-200">
-                        {pixel.views.slice(0, 5).map((view, index) => (
-                          <li key={index} className="py-2">
-                            <div className="flex items-center space-x-3">
-                              <EyeIcon
-                                className="flex-shrink-0 h-5 w-5 text-gray-400"
-                                aria-hidden="true"
-                              />
-                              <p className="text-sm text-gray-600">
-                                {new Date(view.viewedAt).toLocaleString()}
-                              </p>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                      {pixel.views.length > 0 ? (
+                        <ul className="mt-2 divide-y divide-gray-200">
+                          {pixel.views.slice(0, 5).map((view, index) => (
+                            <li key={index} className="py-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <EyeIcon
+                                    className="flex-shrink-0 h-5 w-5 text-gray-400"
+                                    aria-hidden="true"
+                                  />
+                                  <p className="text-sm text-gray-600">
+                                    {new Date(view.viewedAt).toLocaleString()}
+                                  </p>
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-500 mt-2 text-center py-4 bg-gray-50 rounded-md">
+                          No views yet
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {deleteModalOpen && (
+            <div className="fixed inset-0 z-10 overflow-y-auto">
+              <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+                <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <TrashIcon
+                        className="h-6 w-6 text-red-600"
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Delete Tracking Pixel
+                      </h3>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500">
+                          Are you sure you want to delete this tracking pixel?
+                          This action cannot be undone.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                    <button
+                      type="button"
+                      className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                      onClick={confirmDelete}
+                    >
+                      Delete
+                    </button>
+                    <button
+                      type="button"
+                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
+                      onClick={() => setDeleteModalOpen(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* URL Modal */}
+          {urlModalOpen && currentPixel && (
+            <div className="fixed inset-0 z-10 overflow-y-auto">
+              <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+                <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                  <div className="absolute top-0 right-0 pt-4 pr-4">
+                    <button
+                      type="button"
+                      className="bg-white rounded-md text-gray-400 hover:text-gray-500"
+                      onClick={() => setUrlModalOpen(false)}
+                    >
+                      <XMarkIcon className="h-6 w-6" />
+                    </button>
+                  </div>
+                  <div className="sm:flex sm:items-start">
+                    <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Tracking Pixel URL
+                      </h3>
+                      <div className="mt-4">
+                        <div className="flex rounded-md shadow-sm">
+                          <input
+                            type="text"
+                            readOnly
+                            value={`https://email-logger.onrender.com/pixel/invisible/${currentPixel.token}.jpg`}
+                            className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-l-md text-sm border border-gray-300"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleCopyUrl(currentPixel.token)}
+                            className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-gray-500 text-sm hover:bg-gray-100"
+                          >
+                            {copySuccess ? (
+                              <CheckIcon className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <ClipboardDocumentIcon className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                        {copySuccess && (
+                          <p className="mt-2 text-sm text-green-600">
+                            Copied to clipboard!
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

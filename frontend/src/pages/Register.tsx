@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { UserPlusIcon } from "@heroicons/react/20/solid";
 
+const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
+
 const Register: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +25,7 @@ const Register: React.FC = () => {
     }
 
     try {
-      await axios.post("https://email-logger.onrender.com/auth/register", {
+      await axios.post(`${API_BASE_URL}/auth/register`, {
         email,
         password,
       });
