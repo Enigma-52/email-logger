@@ -7,9 +7,18 @@ import {
   GlobeAltIcon,
   ArrowUpIcon,
   ArrowDownIcon,
+  FolderIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
+interface CategoryStats {
+  id: number;
+  name: string;
+  pixelCount: number;
+  totalViews: number;
+  recentViews: number;
+}
 interface AnalyticsData {
   totalViews: number;
   totalPixels: number;
@@ -41,6 +50,27 @@ const Analytics: React.FC = () => {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("week"); // week, month, year
+  const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchCategoryStats = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/categories/stats`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        console.log(response.data);
+
+        setCategoryStats(response.data);
+      } catch (error) {
+        console.error("Error fetching category stats:", error);
+      }
+    };
+
+    fetchCategoryStats();
+  }, [timeRange]);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -76,6 +106,56 @@ const Analytics: React.FC = () => {
     );
   }
 
+  // Add this section to your render method
+  const renderCategoryStats = () => (
+    <div className="mt-8 bg-white shadow rounded-lg">
+      <div className="px-4 py-5 sm:p-6">
+        <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+          Category Performance
+        </h3>
+        <div className="space-y-4">
+          {categoryStats.map((category) => (
+            <div key={category.id} className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-900">
+                  {category.name}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {category.totalViews} views
+                </span>
+              </div>
+              <div className="relative">
+                <div className="overflow-hidden h-2 text-xs flex rounded bg-indigo-200">
+                  <div
+                    style={{
+                      width: `${
+                        (category.recentViews / category.totalViews) * 100 || 0
+                      }%`,
+                    }}
+                    className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-600"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>{category.pixelCount} pixels</span>
+                <span>{category.recentViews} views this week</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Add this to your existing timeframe-based stats
+  const getCategoryDistribution = () => {
+    const total = categoryStats.reduce((sum, cat) => sum + cat.totalViews, 0);
+    return categoryStats.map((cat) => ({
+      name: cat.name,
+      percentage: ((cat.totalViews / total) * 100).toFixed(1),
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -84,36 +164,16 @@ const Analytics: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">
             Analytics Dashboard
           </h1>
-          <div className="flex space-x-2">
+          <div className="">
             <button
-              onClick={() => setTimeRange("week")}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                timeRange === "week"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
-              }`}
+              onClick={() => navigate("/dashboard")}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              Week
-            </button>
-            <button
-              onClick={() => setTimeRange("month")}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                timeRange === "month"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              Month
-            </button>
-            <button
-              onClick={() => setTimeRange("year")}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                timeRange === "year"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              Year
+              <ArrowLeftIcon
+                className="-ml-1 mr-2 h-5 w-5"
+                aria-hidden="true"
+              />
+              Back to Dashboard
             </button>
           </div>
         </div>
@@ -135,7 +195,7 @@ const Analytics: React.FC = () => {
                       Total Views
                     </dt>
                     <dd className="flex items-baseline">
-                      <div className="text-2xl font-semibold text-gray-900">
+                      <div className="text-2xl font-semibold text-indigo-600">
                         {analyticsData?.totalViews}
                       </div>
                     </dd>
@@ -160,7 +220,7 @@ const Analytics: React.FC = () => {
                       Active Pixels
                     </dt>
                     <dd className="flex items-baseline">
-                      <div className="text-2xl font-semibold text-gray-900">
+                      <div className="text-2xl font-semibold text-indigo-600">
                         {analyticsData?.activePixels}
                       </div>
                     </dd>
@@ -185,7 +245,7 @@ const Analytics: React.FC = () => {
                       Views Today
                     </dt>
                     <dd className="flex items-baseline">
-                      <div className="text-2xl font-semibold text-gray-900">
+                      <div className="text-2xl font-semibold text-indigo-600">
                         {analyticsData?.viewsToday}
                       </div>
                     </dd>
@@ -210,7 +270,7 @@ const Analytics: React.FC = () => {
                       Views This Week
                     </dt>
                     <dd className="flex items-baseline">
-                      <div className="text-2xl font-semibold text-gray-900">
+                      <div className="text-2xl font-semibold text-indigo-600">
                         {analyticsData?.viewsThisWeek}
                       </div>
                     </dd>
@@ -284,6 +344,46 @@ const Analytics: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 bg-white shadow rounded-lg">
+          <div className="px-4 py-5 sm:p-6">
+            <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+              Average Views per Pixel by Category
+            </h3>
+            <div className="space-y-4">
+              {categoryStats.map((category) => {
+                const averageViews =
+                  category.pixelCount > 0
+                    ? (category.totalViews / category.pixelCount).toFixed(2)
+                    : "0";
+
+                return (
+                  <div
+                    key={category.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm font-medium text-gray-900">
+                        {category.name}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        ({category.pixelCount} pixels)
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg font-semibold text-indigo-600">
+                        {averageViews}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        avg views/pixel
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

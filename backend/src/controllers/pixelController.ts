@@ -1,19 +1,15 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { sendViewNotification } from '../services/notificationService';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+
 
 const prisma = new PrismaClient();
 
 // Helper function to get client IP
 const getClientIp = (req: Request): string => {
-  console.log('Raw IP Detection Data:', {
-    xForwardedFor: req.headers['x-forwarded-for'],
-    xRealIp: req.headers['x-real-ip'],
-    remoteAddress: req.socket.remoteAddress,
-    ip: req.ip
-  });
 
   // First try x-forwarded-for header (common for proxies/load balancers)
   let ip = 
@@ -39,7 +35,6 @@ const getClientIp = (req: Request): string => {
 
 // Update the IP comparison function as well
 const areIpsEqual = (ip1: string, ip2: string): boolean => {
-  console.log('Comparing IPs:', { ip1, ip2 });
 
   // Normalize IPs
   const normalizeIp = (ip: string): string => {
@@ -50,7 +45,6 @@ const areIpsEqual = (ip1: string, ip2: string): boolean => {
   const normalizedIp1 = normalizeIp(ip1);
   const normalizedIp2 = normalizeIp(ip2);
 
-  console.log('Normalized IPs:', { normalizedIp1, normalizedIp2 });
   return normalizedIp1 === normalizedIp2;
 };
 export const createPixel = async (req: Request, res: Response): Promise<void> => {
@@ -59,7 +53,7 @@ export const createPixel = async (req: Request, res: Response): Promise<void> =>
     return;
   }
 
-  const { recipientEmail, emailSubject } = req.body;
+  const { recipientEmail, emailSubject, notifications } = req.body;
   const userId = req.user.userId;
   const token = crypto.randomBytes(16).toString('hex');
   const creatorIp = getClientIp(req);
@@ -73,6 +67,8 @@ export const createPixel = async (req: Request, res: Response): Promise<void> =>
         emailSubject,
         userId,
         creatorIp,
+        categoryId: req.body.categoryId,
+        notifications: notifications || false,
       },
     });
     console.log('Created Pixel:', pixel);
@@ -121,8 +117,7 @@ export const trackPixel = async (req: Request, res: Response): Promise<void> => 
             userAgent: req.headers['user-agent'] || null,
           },
         }),
-      ]);
-      console.log('View logged successfully');
+      ]);      
     }
 
     const sendTrackingImage = () => {
@@ -167,7 +162,8 @@ export const getPixelStats = async (req: Request, res: Response): Promise<void> 
         emailSubject: true,
         viewCount: true,
         createdAt: true,
-        creatorIp: true,  // Optional: you might want to hide this
+        creatorIp: true,
+        categoryId: true,  // Optional: you might want to hide this
         views: {
           select: {
             viewedAt: true,
@@ -204,8 +200,6 @@ export const serveInvisiblePixel = async (req: Request, res: Response): Promise<
   const { token } = req.params;
   const viewerIp = getClientIp(req);
 
-
-  
   try {
     const pixel = await prisma.pixel.findUnique({ where: { token } });
     if (!pixel) {
@@ -214,18 +208,11 @@ export const serveInvisiblePixel = async (req: Request, res: Response): Promise<
       return;
     }
 
-    console.log('Found Pixel:', pixel);
-    console.log('IP Comparison:', {
-      creatorIp: pixel.creatorIp,
-      viewerIp: viewerIp
-    });
-
     // Check if this is the creator viewing their own pixel
     const isCreator = areIpsEqual(viewerIp, pixel.creatorIp ?? '');
-    console.log(`Is Creator? ${isCreator}`);
 
     // If it's not the creator, log the view
-    if (!isCreator) {
+    if (true) {
       console.log('➡️ Logging view for non-creator');
       await prisma.$transaction([
         prisma.pixel.update({
@@ -241,6 +228,11 @@ export const serveInvisiblePixel = async (req: Request, res: Response): Promise<
         }),
       ]);
       console.log('✅ View logged successfully');
+      console.log('Pixel:', pixel.notifications);
+      
+      if (pixel.notifications) {
+        sendViewNotification(pixel.id, new Date());
+      }
     } else {
       console.log('⚠️ Creator view detected - skipping tracking');
     }
@@ -259,8 +251,6 @@ export const serveInvisiblePixel = async (req: Request, res: Response): Promise<
     res.end(img);
 
   } catch (error) {
-    console.log('❌ Error serving invisible pixel:', error);
-    console.error('Error serving invisible pixel:', error);
     res.status(500).send('Internal server error');
   }
 };
@@ -307,3 +297,134 @@ export const deletePixel = async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ error: 'Error deleting pixel' });
   }
 };
+
+export const getAnalytics = async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    res.status(401).json({ error: 'User not authenticated' });
+    return;
+  }
+ 
+  const { range = 'week' } = req.query;
+  const userId = req.user.userId;
+ 
+  try {
+    // Calculate date ranges
+    const now = new Date();
+    const startDate = new Date();
+    if (range === 'week') {
+      startDate.setDate(now.getDate() - 7);
+    } else if (range === 'month') {
+      startDate.setMonth(now.getMonth() - 1);
+    } else if (range === 'year') {
+      startDate.setFullYear(now.getFullYear() - 1);
+    }
+ 
+    // Get all pixels for user with their views
+    const pixels = await prisma.pixel.findMany({
+      where: {
+        userId: userId,
+      },
+      include: {
+        views: {
+          where: {
+            viewedAt: {
+              gte: startDate,
+            },
+          },
+        },
+      },
+    });
+ 
+    // Calculate total views
+    const totalViews = pixels.reduce((sum, pixel) => sum + pixel.viewCount, 0);
+ 
+    // Calculate active pixels (pixels with views in selected time range)
+    const activePixels = pixels.filter(pixel => pixel.views.length > 0).length;
+ 
+    // Calculate views today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const viewsToday = pixels.reduce(
+      (sum, pixel) => 
+        sum + pixel.views.filter(view => 
+          new Date(view.viewedAt) >= today
+        ).length,
+      0
+    );
+ 
+    // Calculate views this week
+    const weekStart = new Date();
+    weekStart.setDate(weekStart.getDate() - 7);
+    const viewsThisWeek = pixels.reduce(
+      (sum, pixel) => 
+        sum + pixel.views.filter(view => 
+          new Date(view.viewedAt) >= weekStart
+        ).length,
+      0
+    );
+ 
+    // Calculate views this month
+    const monthStart = new Date();
+    monthStart.setMonth(monthStart.getMonth() - 1);
+    const viewsThisMonth = pixels.reduce(
+      (sum, pixel) => 
+        sum + pixel.views.filter(view => 
+          new Date(view.viewedAt) >= monthStart
+        ).length,
+      0
+    );
+ 
+    // Get top performing pixels
+    const topPixels = pixels
+      .map(pixel => ({
+        emailSubject: pixel.emailSubject,
+        recipientEmail: pixel.recipientEmail,
+        viewCount: pixel.viewCount,
+        createdAt: pixel.createdAt,
+      }))
+      .sort((a, b) => b.viewCount - a.viewCount)
+      .slice(0, 5);
+ 
+    // Get recent activity
+    const recentActivity = pixels
+      .flatMap(pixel =>
+        pixel.views.map(view => ({
+          emailSubject: pixel.emailSubject,
+          recipientEmail: pixel.recipientEmail,
+          viewedAt: view.viewedAt,
+        }))
+      )
+      .sort((a, b) => new Date(b.viewedAt).getTime() - new Date(a.viewedAt).getTime())
+      .slice(0, 10);
+ 
+    // Calculate views by day for the selected time range
+    const viewsByDay = new Map();
+    pixels.forEach(pixel => {
+      pixel.views.forEach(view => {
+        const date = new Date(view.viewedAt).toISOString().split('T')[0];
+        viewsByDay.set(date, (viewsByDay.get(date) || 0) + 1);
+      });
+    });
+ 
+    // Convert viewsByDay map to sorted array
+    const viewsByDayArray = Array.from(viewsByDay.entries())
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+ 
+    res.json({
+      totalViews,
+      totalPixels: pixels.length,
+      activePixels,
+      viewsToday,
+      viewsThisWeek,
+      viewsThisMonth,
+      topPixels,
+      recentActivity,
+      viewsByDay: viewsByDayArray,
+    });
+ 
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Error fetching analytics' });
+  }
+ };

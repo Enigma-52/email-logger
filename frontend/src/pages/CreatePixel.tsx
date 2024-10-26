@@ -1,11 +1,18 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
   ClipboardDocumentIcon,
   ArrowLeftIcon,
+  PlusIcon,
+  BellIcon,
 } from "@heroicons/react/24/outline";
 import { Dialog, Transition } from "@headlessui/react";
+
+interface Category {
+  id: number;
+  name: string;
+}
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -15,13 +22,61 @@ const CreatePixel: React.FC = () => {
   const [pixelToken, setPixelToken] = useState("");
   const [isCopied, setIsCopied] = useState(false);
   const [error, setError] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
+  const [newCategory, setNewCategory] = useState("");
+  const [showCategoryInput, setShowCategoryInput] = useState(false);
   const navigate = useNavigate();
+  const [enableNotifications, setEnableNotifications] = useState(false);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/categories/`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        setCategories(response.data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleCreateCategory = async () => {
+    if (!newCategory.trim()) return;
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/categories/`,
+        { name: newCategory.trim() },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      setCategories([...categories, response.data]);
+      setSelectedCategoryId(response.data.id);
+      setNewCategory("");
+      setShowCategoryInput(false);
+    } catch (error) {
+      console.error("Error creating category:", error);
+      setError("Failed to create category. Please try again.");
+    }
+  };
 
   const handleCreatePixel = async () => {
     try {
       const response = await axios.post(
         `${API_BASE_URL}/pixel/create`,
-        { recipientEmail, emailSubject },
+        {
+          recipientEmail,
+          emailSubject,
+          categoryId: selectedCategoryId,
+          notifications: enableNotifications,
+        },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
@@ -85,6 +140,101 @@ const CreatePixel: React.FC = () => {
                     required
                   />
                 </div>
+                {/* Category Section */}
+                <div>
+                  <label
+                    htmlFor="category"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Category
+                  </label>
+                  <div className="mt-1 flex space-x-2">
+                    <select
+                      id="category"
+                      value={selectedCategoryId || ""}
+                      onChange={(e) =>
+                        setSelectedCategoryId(
+                          e.target.value ? Number(e.target.value) : null
+                        )
+                      }
+                      className="flex-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryInput(true)}
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      <PlusIcon className="-ml-0.5 mr-2 h-4 w-4" />
+                      New
+                    </button>
+                  </div>
+                </div>
+
+                {/* New Category Input */}
+                <Transition
+                  show={showCategoryInput}
+                  enter="transition ease-out duration-100"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-75"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <div className="mt-2">
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={newCategory}
+                        onChange={(e) => setNewCategory(e.target.value)}
+                        placeholder="Category name"
+                        className="flex-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateCategory}
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowCategoryInput(false)}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </Transition>
+                <div className="relative flex items-start">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="notifications"
+                      type="checkbox"
+                      checked={enableNotifications}
+                      onChange={(e) => setEnableNotifications(e.target.checked)}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded cursor-pointer"
+                    />
+                  </div>
+                  <div className="ml-3 text-sm">
+                    <label
+                      htmlFor="notifications"
+                      className="font-medium text-gray-700 cursor-pointer"
+                    >
+                      Enable Email Notifications
+                    </label>
+                    <p className="text-gray-500">
+                      Get notified when this email is viewed
+                    </p>
+                  </div>
+                </div>
                 {error && <div className="text-red-600 text-sm">{error}</div>}
                 <button
                   onClick={handleCreatePixel}
@@ -102,6 +252,12 @@ const CreatePixel: React.FC = () => {
                   <p className="mt-1 text-sm text-gray-500">
                     Follow the instructions below to use it in your emails.
                   </p>
+                  {enableNotifications && (
+                    <div className="mt-2 flex items-center text-sm text-green-600">
+                      <BellIcon className="h-5 w-5 mr-1" />
+                      Email notifications enabled for this pixel
+                    </div>
+                  )}
                 </div>
 
                 <div>

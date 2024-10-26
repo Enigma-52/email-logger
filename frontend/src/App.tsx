@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import CreatePixel from "./pages/CreatePixel";
 import PrivateRoute from "./components/PrivateRoute";
+import Analytics from "./pages/Analytics";
 
 const App: React.FC = () => {
   return (
@@ -31,6 +32,14 @@ const App: React.FC = () => {
             element={
               <PrivateRoute>
                 <CreatePixel />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <PrivateRoute>
+                <Analytics />
               </PrivateRoute>
             }
           />

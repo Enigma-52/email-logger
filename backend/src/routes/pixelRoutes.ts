@@ -19,4 +19,7 @@ router.get('/stats', authenticateToken, (req, res) => pixelController.getPixelSt
 //Delete
 router.delete('/:id', authenticateToken, (req, res) => pixelController.deletePixel(req, res));
 
+//Analytics
+router.get('/analytics', authenticateToken, (req, res) => pixelController.getAnalytics(req, res));
+
 export default router;

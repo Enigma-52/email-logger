@@ -10,8 +10,17 @@ import {
   XMarkIcon,
   MapIcon,
   ChartBarIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
 import { CheckIcon } from "@heroicons/react/24/solid";
+
+interface Category {
+  id: number;
+  name: string;
+  _count: {
+    pixels: number;
+  };
+}
 
 interface View {
   viewedAt: string;
@@ -25,6 +34,7 @@ interface Pixel {
   viewCount: number;
   createdAt: string;
   views: View[];
+  categoryId: number;
 }
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
@@ -37,15 +47,40 @@ const Dashboard: React.FC = () => {
   const [urlModalOpen, setUrlModalOpen] = useState(false);
   const [currentPixel, setCurrentPixel] = useState<Pixel | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchPixels = async () => {
+    const fetchCategories = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/pixel/stats`, {
+        const response = await axios.get(`${API_BASE_URL}/categories`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
+        console.log(response.data);
+        setCategories(response.data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchPixels = async () => {
+      try {
+        const url = selectedCategory
+          ? `${API_BASE_URL}/pixel/stats?categoryId=${selectedCategory}`
+          : `${API_BASE_URL}/pixel/stats`;
+
+        const response = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        console.log("pixels", response.data.pixels);
         setPixels(response.data.pixels);
         setIsLoading(false);
       } catch (error) {
@@ -55,7 +90,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchPixels();
-  }, []);
+  }, [selectedCategory]);
 
   const handleDelete = (pixel: Pixel) => {
     setPixelToDelete(pixel);
@@ -96,24 +131,60 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">
-              Email Tracking Dashboard
-            </h2>
-            <Link
-              to="/analytics"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <ChartBarIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Analytics
-            </Link>
-            <Link
-              to="/create-pixel"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-              Create New Pixel
-            </Link>
+          <div className="flex flex-col space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold text-gray-900">
+                Email Tracking Dashboard
+              </h2>
+              <div className="flex space-x-2">
+                <Link
+                  to="/analytics"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <ChartBarIcon
+                    className="-ml-1 mr-2 h-5 w-5"
+                    aria-hidden="true"
+                  />
+                  Analytics
+                </Link>
+                {pixels.length > 0 && (
+                  <Link
+                    to="/create-pixel"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <PlusIcon
+                      className="-ml-1 mr-2 h-5 w-5"
+                      aria-hidden="true"
+                    />
+                    Create New Pixel
+                  </Link>
+                )}
+              </div>
+            </div>
+            <div className="w-40 ml-auto relative">
+              <select
+                value={selectedCategory || ""}
+                onChange={(e) =>
+                  setSelectedCategory(
+                    e.target.value ? Number(e.target.value) : null
+                  )
+                }
+                className="w-full appearance-none bg-white border border-gray-300 rounded-md py-2 pl-3 pr-2 text-sm leading-5 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name} ({category._count.pixels})
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <FunnelIcon
+                  className="h-5 w-5 text-gray-400"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
           </div>
 
           {isLoading ? (
@@ -140,7 +211,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-3">
+            <div className="pt-2 grid gap-6 mb-8 md:grid-cols-2 xl:grid-cols-3">
               {pixels.map((pixel) => (
                 <div
                   key={pixel.id}
@@ -165,6 +236,13 @@ const Dashboard: React.FC = () => {
                   </div>
 
                   <div className="px-4 py-5 sm:p-6">
+                    {pixel.categoryId && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 mb-2">
+                        {categories.find(
+                          (category) => category.id === pixel.categoryId
+                        )?.name || "Unknown Category"}
+                      </span>
+                    )}
                     <h3 className="text-lg leading-6 font-medium text-gray-900 truncate">
                       {pixel.emailSubject}
                     </h3>

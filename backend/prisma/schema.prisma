@@ -9,25 +9,29 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
   password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   pixels    Pixel[]
+  Category  Category[]
 }
 
 model Pixel {
-  id             Int      @id @default(autoincrement())
-  token          String   @unique
+  id             Int       @id @default(autoincrement())
+  token          String    @unique
   recipientEmail String
   emailSubject   String
-  viewCount      Int      @default(0)
-  createdAt      DateTime @default(now())
+  viewCount      Int       @default(0)
+  createdAt      DateTime  @default(now())
   creatorIp      String?
+  categoryId     Int? // Optional category
+  category       Category? @relation(fields: [categoryId], references: [id])
   userId         Int
-  user           User     @relation(fields: [userId], references: [id])
+  user           User      @relation(fields: [userId], references: [id])
   views          View[]
+  notifications  Boolean   @default(false)
 }
 
 model View {
@@ -38,4 +42,15 @@ model View {
   viewerIp  String?
   userAgent String?
   ipAddress String?
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String
+  userId    Int // Categories are user-specific
+  user      User     @relation(fields: [userId], references: [id])
+  pixels    Pixel[]
+  createdAt DateTime @default(now())
+
+  @@unique([name, userId]) // Unique categories per user
 }
