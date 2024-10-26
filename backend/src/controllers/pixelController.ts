@@ -151,10 +151,13 @@ export const getPixelStats = async (req: Request, res: Response): Promise<void> 
   }
 
   const userId = req.user.userId;
+  const categoryId = req.query.categoryId ? Number(req.query.categoryId) : undefined;
   
   try {
     const pixels = await prisma.pixel.findMany({
-      where: { userId },
+      where: { userId,
+        ...(categoryId && { categoryId }),
+       },
       select: {
         id: true,
         token: true,

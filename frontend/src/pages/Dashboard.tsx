@@ -33,8 +33,8 @@ interface Pixel {
   emailSubject: string;
   viewCount: number;
   createdAt: string;
+  categoryId: number | null;
   views: View[];
-  categoryId: number;
 }
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
@@ -49,6 +49,7 @@ const Dashboard: React.FC = () => {
   const [copySuccess, setCopySuccess] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [maxPixels, setMaxPixels] = useState(0);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -71,17 +72,22 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchPixels = async () => {
       try {
-        const url = selectedCategory
-          ? `${API_BASE_URL}/pixel/stats?categoryId=${selectedCategory}`
-          : `${API_BASE_URL}/pixel/stats`;
+        setIsLoading(true);
+        const url = new URL(`${API_BASE_URL}/pixel/stats`);
+        if (selectedCategory) {
+          url.searchParams.append("categoryId", selectedCategory.toString());
+        }
 
-        const response = await axios.get(url, {
+        const response = await axios.get(url.toString(), {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
         console.log("pixels", response.data.pixels);
-        setPixels(response.data.pixels);
+        await setPixels(response.data.pixels);
+        if (maxPixels == 0) {
+          setMaxPixels(response.data.pixels.length);
+        }
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching pixels:", error);
@@ -161,29 +167,42 @@ const Dashboard: React.FC = () => {
                 )}
               </div>
             </div>
-            <div className="w-40 ml-auto relative">
-              <select
-                value={selectedCategory || ""}
-                onChange={(e) =>
-                  setSelectedCategory(
-                    e.target.value ? Number(e.target.value) : null
-                  )
-                }
-                className="w-full appearance-none bg-white border border-gray-300 rounded-md py-2 pl-3 pr-2 text-sm leading-5 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Categories</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name} ({category._count.pixels})
-                  </option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <FunnelIcon
-                  className="h-5 w-5 text-gray-400"
-                  aria-hidden="true"
-                />
+            <div className="w-64 ml-auto">
+              <div className="relative">
+                <select
+                  value={selectedCategory || ""}
+                  onChange={(e) =>
+                    setSelectedCategory(
+                      e.target.value ? Number(e.target.value) : null
+                    )
+                  }
+                  className="w-full appearance-none bg-white border border-gray-300 rounded-md py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">All Categories ({maxPixels})</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name} ({category._count.pixels})
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <FunnelIcon
+                    className="h-5 w-5 text-gray-400"
+                    aria-hidden="true"
+                  />
+                </div>
               </div>
+              {selectedCategory && (
+                <div className="mt-2 flex items-center justify-end">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className="text-sm text-gray-500 hover:text-gray-700 flex items-center"
+                  >
+                    <XMarkIcon className="h-4 w-4 mr-1" />
+                    Clear filter
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
