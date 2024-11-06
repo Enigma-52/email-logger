@@ -27,19 +27,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const pixelController = __importStar(require("../controllers/pixelController"));
+const categoryController = __importStar(require("../controllers/categoryController"));
 const auth_1 = require("../middleware/auth");
 const router = express_1.default.Router();
-// Create a new pixel (protected route)
-router.post('/create', auth_1.authenticateToken, (req, res) => pixelController.createPixel(req, res));
-// Track a pixel view (public route)
-router.get('/track/:token', (req, res) => pixelController.trackPixel(req, res));
-// Serve invisible pixel (public route)
-router.get('/invisible/:token.jpg', (req, res) => pixelController.serveInvisiblePixel(req, res));
-// Get pixel stats (protected route)
-router.get('/stats', auth_1.authenticateToken, (req, res) => pixelController.getPixelStats(req, res));
-//Delete
-router.delete('/:id', auth_1.authenticateToken, (req, res) => pixelController.deletePixel(req, res));
-//Analytics
-router.get('/analytics', auth_1.authenticateToken, (req, res) => pixelController.getAnalytics(req, res));
+router.get('/', auth_1.authenticateToken, (req, res) => categoryController.getCategories(req, res));
+router.post('/', auth_1.authenticateToken, (req, res) => categoryController.createCategory(req, res));
+router.get('/stats', auth_1.authenticateToken, (req, res) => categoryController.getCategoryStats(req, res));
 exports.default = router;
