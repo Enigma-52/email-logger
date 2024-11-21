@@ -25,7 +25,7 @@ model Pixel {
   emailSubject   String
   viewCount      Int       @default(0)
   createdAt      DateTime  @default(now())
-  creatorIp      String?
+  creatorIp      String
   categoryId     Int? // Optional category
   category       Category? @relation(fields: [categoryId], references: [id])
   userId         Int
