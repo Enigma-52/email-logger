@@ -11,12 +11,14 @@ import Dashboard from "./pages/Dashboard";
 import CreatePixel from "./pages/CreatePixel";
 import PrivateRoute from "./components/PrivateRoute";
 import Analytics from "./pages/Analytics";
+import Landing from "./pages/Landing";
 
 const App: React.FC = () => {
   return (
     <Router>
       <div className="App">
         <Routes>
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route
