@@ -95,7 +95,7 @@ const LandingPage = () => {
           <Button
             className="group text-lg animate-fade-in-down"
             style={{ animationDelay: "400ms" }}
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/register")}
           >
             Start Free
             <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1" />
@@ -145,14 +145,14 @@ const LandingPage = () => {
               style={{ animationDelay: "1000ms" }}
             >
               <Button
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/register")}
                 className="px-10 py-7 text-xl group hover:scale-105 transition-transform"
               >
                 Get Started
                 <Zap className="w-6 h-6 ml-3 group-hover:scale-110 transition-transform animate-pulse" />
               </Button>
               <Button
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/register")}
                 variant="outline"
                 className="px-10 py-7 text-xl hover:scale-105 transition-transform"
               >
