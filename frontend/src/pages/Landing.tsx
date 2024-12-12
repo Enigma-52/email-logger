@@ -72,27 +72,6 @@ const LandingPage = () => {
         </div>
         <div className="flex items-center space-x-8">
           <Button
-            variant="ghost"
-            className="text-lg animate-fade-in-down"
-            style={{ animationDelay: "100ms" }}
-          >
-            Features
-          </Button>
-          <Button
-            variant="ghost"
-            className="text-lg animate-fade-in-down"
-            style={{ animationDelay: "200ms" }}
-          >
-            Pricing
-          </Button>
-          <Button
-            variant="ghost"
-            className="text-lg animate-fade-in-down"
-            style={{ animationDelay: "300ms" }}
-          >
-            Contact
-          </Button>
-          <Button
             className="group text-lg animate-fade-in-down"
             style={{ animationDelay: "400ms" }}
             onClick={() => navigate("/register")}
