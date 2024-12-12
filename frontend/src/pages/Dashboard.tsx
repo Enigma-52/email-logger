@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Mail,
   Eye,
@@ -54,6 +54,20 @@ const Dashboard: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [maxPixels, setMaxPixels] = useState(0);
+
+  const [showModal, setShowModal] = useState(false);
+  const [isRegistration, setIsRegistration] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const authStatus = localStorage.getItem("auth_status");
+    if (!authStatus) {
+      setIsRegistration(true);
+      setShowModal(true);
+    } else if (authStatus !== "ACTIVE") {
+      setShowModal(true);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -136,6 +150,64 @@ const Dashboard: React.FC = () => {
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 2000);
   };
+
+  if (showModal) {
+    return (
+      <div className="fixed inset-0 z-50 bg-gray-600 bg-opacity-50 backdrop-blur-sm flex items-center justify-center">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md animate-fade-in-up relative overflow-hidden">
+          {/* Background Elements - matching dashboard style */}
+          <div className="absolute -top-16 -right-16 w-[300px] h-[300px] bg-blue-100 rounded-full blur-3xl opacity-30 animate-pulse" />
+          <div className="absolute -bottom-16 -left-16 w-[250px] h-[250px] bg-blue-50 rounded-full blur-3xl opacity-30 animate-pulse delay-700" />
+
+          {/* Content */}
+          <div className="relative">
+            <div className="flex items-start space-x-4">
+              <div className="bg-blue-600 p-3 rounded-xl rotate-3">
+                {isRegistration ? (
+                  <Plus className="w-6 h-6 text-white" />
+                ) : (
+                  <Mail className="w-6 h-6 text-white" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                  {isRegistration
+                    ? "Registration Required"
+                    : "Email Verification Required"}
+                </h2>
+                <p className="mt-2 text-gray-600">
+                  {isRegistration
+                    ? "Please create an account to access the dashboard"
+                    : "Please verify your email to continue using the dashboard"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <button
+                onClick={() =>
+                  navigate(isRegistration ? "/register" : "/login")
+                }
+                className="w-full px-6 py-3 rounded-xl text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300 shadow-lg shadow-blue-200 hover:shadow-blue-300 flex items-center justify-center"
+              >
+                {isRegistration ? (
+                  <>
+                    <Plus className="w-5 h-5 mr-2" />
+                    Create Account
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-5 h-5 mr-2" />
+                    Go to Login
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
@@ -242,20 +314,20 @@ const Dashboard: React.FC = () => {
               {pixels.map((pixel) => (
                 <div
                   key={pixel.id}
-                  className="bg-white rounded-2xl border-2 border-blue-100 shadow-xl hover:shadow-2xl transition-all duration-300 group"
+                  className="bg-white rounded-2xl border-2 border-blue-100 shadow-xl hover:shadow-2xl transition-all duration-300 group relative"
                 >
-                  {/* Action Buttons */}
-                  <div className="absolute top-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  {/* Action Buttons - Updated positioning and visibility */}
+                  <div className="absolute top-4 right-4 flex space-x-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 bg-white/80 backdrop-blur-sm rounded-xl p-1">
                     <button
                       onClick={() => handleShowUrl(pixel)}
-                      className="p-2 rounded-xl text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      className="p-2 rounded-xl text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                       title="View Tracking URL"
                     >
                       <Link2 className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDelete(pixel)}
-                      className="p-2 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      className="p-2 rounded-xl text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
                       title="Delete Pixel"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -270,7 +342,7 @@ const Dashboard: React.FC = () => {
                         )?.name || "Unknown Category"}
                       </span>
                     )}
-                    <h3 className="text-xl font-semibold text-gray-900 mt-2 truncate">
+                    <h3 className="text-xl font-semibold text-gray-900 mt-2 truncate pr-20">
                       {pixel.emailSubject}
                     </h3>
                     <div className="mt-3 space-y-2">

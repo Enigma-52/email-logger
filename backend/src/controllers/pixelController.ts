@@ -215,7 +215,7 @@ export const serveInvisiblePixel = async (req: Request, res: Response): Promise<
     const isCreator = areIpsEqual(viewerIp, pixel.creatorIp ?? '');
 
     // If it's not the creator, log the view
-    if (true) {
+    if (!isCreator) {
       console.log('➡️ Logging view for non-creator');
       await prisma.$transaction([
         prisma.pixel.update({

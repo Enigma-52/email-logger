@@ -15,7 +15,7 @@ app.use('/categories', categoryRoutes);
 
 
 app.get('/health', (req, res) => {
-  res.status(200).send('WORKS'); 
+  res.status(200).send('Works'); 
 });
 
 

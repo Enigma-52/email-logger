@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -25,6 +25,13 @@ const Register = () => {
   const [step, setStep] = useState(1); // 1: Register, 2: OTP, 3: Success
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const authStatus = localStorage.getItem("auth_status");
+    if (authStatus && authStatus === "ACTIVE") {
+      navigate("/dashboard");
+    }
+  }, []);
 
   const handleOtpChange = (element: HTMLInputElement, index: number) => {
     if (isNaN(Number(element.value))) return false;
@@ -69,10 +76,24 @@ const Register = () => {
 
     try {
       const otpString = otp.join("");
-      await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
-        email,
-        otp: otpString,
+      console.log(otpString);
+      const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, otpString }),
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error);
+      }
+
+      const data = await response.json();
+      // Store token in localStorage
+      localStorage.setItem("auth_token", data.token);
+      localStorage.setItem("auth_status", "ACTIVE");
       setStep(3);
       setTimeout(() => {
         navigate("/dashboard", {
