@@ -15,10 +15,11 @@ app.use('/categories', categoryRoutes);
 
 
 app.get('/health', (req, res) => {
-  res.sendStatus(200).send('OK');
-})
+  res.status(200).send('WORKS'); 
+});
 
-const PORT = process.env.PORT || 3000;
+
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
