@@ -55,7 +55,7 @@ const Analytics: React.FC = () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/categories/stats`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
           },
         });
         console.log(response.data);
@@ -76,7 +76,7 @@ const Analytics: React.FC = () => {
           `${API_BASE_URL}/pixel/analytics?range=${timeRange}`,
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
             },
           }
         );

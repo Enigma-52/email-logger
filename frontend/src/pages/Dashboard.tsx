@@ -11,6 +11,7 @@ import {
   Map,
   BarChart2,
   Filter,
+  LogOut,
   AlertCircle,
   Plus,
   CheckCircle,
@@ -74,7 +75,7 @@ const Dashboard: React.FC = () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/categories`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
           },
         });
         console.log(response.data);
@@ -98,7 +99,7 @@ const Dashboard: React.FC = () => {
 
         const response = await axios.get(url.toString(), {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
           },
         });
         console.log("pixels", response.data.pixels);
@@ -121,12 +122,18 @@ const Dashboard: React.FC = () => {
     setDeleteModalOpen(true);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("auth_status");
+    navigate("/login");
+  };
+
   const confirmDelete = async () => {
     if (pixelToDelete) {
       try {
         await axios.delete(`${API_BASE_URL}/pixel/${pixelToDelete.id}`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
           },
         });
         setPixels(pixels.filter((p) => p.id !== pixelToDelete.id));
@@ -249,6 +256,13 @@ const Dashboard: React.FC = () => {
                     Create New Pixel
                   </Link>
                 )}
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center px-4 py-2 rounded-xl text-gray-700 hover:text-red-600 hover:bg-red-50 transition-all duration-300"
+                >
+                  <LogOut className="w-5 h-5 mr-2" />
+                  Sign out
+                </button>
               </div>
             </div>
 

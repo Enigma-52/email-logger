@@ -96,12 +96,7 @@ const Register = () => {
       localStorage.setItem("auth_status", "ACTIVE");
       setStep(3);
       setTimeout(() => {
-        navigate("/dashboard", {
-          state: {
-            showWelcome: true,
-            message: "Registration successful! Welcome to EmailTrack.",
-          },
-        });
+        navigate("/dashboard");
       }, 2000);
     } catch (error: any) {
       setError(

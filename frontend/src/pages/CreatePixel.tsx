@@ -36,7 +36,9 @@ const CreatePixel: React.FC = () => {
     const fetchCategories = async () => {
       try {
         const response = await axios.get(`${API_BASE_URL}/categories/`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
         });
         setCategories(response.data);
       } catch (error) {
@@ -55,7 +57,9 @@ const CreatePixel: React.FC = () => {
         `${API_BASE_URL}/categories/`,
         { name: newCategory.trim() },
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
         }
       );
       setCategories([...categories, response.data]);
@@ -79,7 +83,9 @@ const CreatePixel: React.FC = () => {
           notifications: enableNotifications,
         },
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+          },
         }
       );
       setPixelToken(response.data.pixelToken);

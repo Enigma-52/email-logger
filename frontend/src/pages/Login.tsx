@@ -31,7 +31,7 @@ const Login = () => {
         email,
         password,
       });
-      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("auth_token", response.data.token);
       localStorage.setItem("auth_status", "ACTIVE");
       navigate("/dashboard");
     } catch (error) {
