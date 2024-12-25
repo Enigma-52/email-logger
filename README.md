@@ -1,1 +1,1 @@
-# email-logger
+# Email tracker webapp
